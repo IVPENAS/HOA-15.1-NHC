@@ -1,0 +1,66 @@
+#Installation of OS_Horizon
+---
+
+  - name: Installing Horizon
+    tags: horizon, ubuntu
+    apt:
+      name: openstack-dashboard
+      state: latest
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Configuring the python file of local_settings.py
+    tags: horizon, ubuntu, edit
+    lineinfile:
+      path: /etc/openstack-dashboard/local_settings.py
+      regexp: 'OPENsTACK_HOST = "127.0.0.1"'
+      line: 'OPENSTACK_HOST = "controller"'
+
+  - name: Varification in the python file of local_settings.py
+    tags: horizon, ubuntu, edit
+    lineinfile:
+      path: /etc/openstack-dashboard/local_settings.py
+      line: "'OPENSTACK_HOST = '*'"
+      state: present
+    check_mode: yes
+
+  - name: Configuring the python file of local_settings.py (SESSION_ENGINE) pt. 2
+    tags: horizon, ubuntu, edit
+    lineinfile:
+      path: /etc/openstack-dashboard/local_settings.py
+      regexp: "SESSION_ENGINE = 'django.contrib.sessions.backends.signed_cookies'"
+      line: "SESSION_ENGINE = 'django.contrib.sessions.backends.cache'"
+
+  - name: Configuring the python file of local_settings.py (OS_K URL) pt. 3
+    tags: horizon, ubuntu, edit
+    lineinfile:
+      path: /etc/openstack-dashboard/local_settings.py
+      regexp: 'OPENSTACK_KEYSTONE_URL = "http://%s/identity/v3" % OPENSTACK_HOST'
+      line: 'OPENSTACK_KEYSTONE_URL = "http://%s:5000/identity/v3" % OPENSTACK_HOST'
+      state: present
+    check_mode: yes
+
+  - name: Enable support for domains
+    tags: neutron, ubuntu, edit
+    lineinfile:
+      path: /etc/openstack-dashboard/local_settings.py
+      line: "OPENSTACK_KEYSTONE_MULTIDOMAIN_SUPPORT = True"
+      state: present
+
+  - name: Enabling Default Domain for users
+    tags: neutron, ubuntu, edit
+    lineinfile:
+      path: /etc/openstack-dashboard/local_settings.py
+      line: 'OPENSTACK_KEYSTONE_DEFAULT_DOMAIN = "Default"'
+      state: present
+
+  - name: Enabling user as the default role
+    tags: neutron, ubuntu, edit
+    lineinfile:
+      path: /etc/openstack-dashboard/local_settings.py
+      line: 'OPENSTACK_KEYSTONE_DEFAULT_ROLE = "user"'
+      state: present
+
+  - name: Restating the apache2.service
+    service:
+      name: apache2.service
+      state: restarted

@@ -1,0 +1,65 @@
+#Installation of OS_Cinder
+---
+
+  - name: Installing the Cinder Packages
+    apt:
+      name:
+        - cinder-api
+        - cinder-scheduler
+      state: latest
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Configuring the cinder.conf file (database)
+    tags: cinder, ubuntu, edit
+    lineinfile:
+      path: /etc/cinder/cinder.conf
+      regexp: "connection = sqlite:////var/lib/cinder/cinder.sqlite"
+      line: "connection = mysql+pymysql://cinder:0uma999@controller/cinder"
+
+  - name: Line Verification of cinder.conf
+    tags: neutron, ubuntu, edit
+    lineinfile:
+      path: /etc/cinder/cinder.conf
+      line: "auth_strategy = keystone"
+      state: present
+    check_mode: yes
+
+  - name: Configuring the configuration file of cinder.conf pt. 2
+    tags: neutron, ubuntu, edit
+    lineinfile:
+      path: /etc/cinder/cinder.conf
+      regexp: "www_authenticate_uri = <None>"
+      line: "www_authenticate_uri = http://controller:5000"
+      state: present
+
+  - name: Configuring the configuration file of cinder.conf pt. 3
+    tags: neutron, ubuntu, edit
+    lineinfile:
+      path: /etc/cinder/cinder.conf
+      regexp: "memcached_servers = <None>"
+      line: "memcached_servers = controller:11211"
+      state: present
+
+  - name: Configuring the configuration file of cinder.conf pt. 4
+    tags: neutron, ubuntu, edit
+    lineinfile:
+      path: /etc/cinder/cinder.conf
+      regexp: "auth_type = <None>"
+      line: "auth_type = password"
+      state: present
+
+  - name: Restarting the Nova service (compute service)
+    service:
+      name: nova-compute
+      state: restarted
+
+  - name: Restarting the cinder-scheduler service (Block Storage Services)
+    service:
+      name: cinder-scheduler
+      state: restarted
+
+  - name: Restating the apache2 service (Block Storage Services)
+    service:
+      name: apache2
+      state: restarted
+

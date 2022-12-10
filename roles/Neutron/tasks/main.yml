@@ -1,0 +1,65 @@
+#Installation of OS_Neutron
+---
+
+  - name: Installing Neutron
+    apt:
+      name: neutron-linuxbridge-agent
+      state: latest
+    when: ansible_distribution == "Ubuntu"
+
+  - name: Configuring the configuration file of neutron.conf
+    tags: neutron, ubuntu, edit
+    lineinfile:
+      path: /etc/neutron/neutron.conf
+      regexp: "transport_url = rabbit://"
+      line: "transport_url = rabbit://openstack:kimchi31@controller"
+
+  - name: Line Verification of neutron.conf
+    tags: neutron, ubuntu, edit
+    lineinfile:
+      path: /etc/neutron/neutron.conf
+      line: "auth_strategy = keystone"
+      state: present
+    check_mode: yes
+
+  - name: Configuring the configuration file of neutron.conf pt. 2
+    tags: neutron, ubuntu, edit
+    lineinfile:
+      path: /etc/neutron/neutron.conf
+      regexp: "www_authenticate_uri = <None>"
+      line: "www_authenticate_uri = http://controller:5000"
+      state: present
+
+  - name: Configuring the configuration file of neutron.conf pt. 3
+    tags: neutron, ubuntu, edit
+    lineinfile:
+      path: /etc/neutron/neutron.conf
+      regexp: "memcached_servers = <None>"
+      line: "memcached_servers = controller:11211"
+      state: present
+
+  - name: Configuring the configuration file of neutron.conf pt. 4
+    tags: neutron, ubuntu, edit
+    lineinfile:
+      path: /etc/neutron/neutron.conf
+      regexp: "auth_type = <None>"
+      line: "auth_type = password"
+      state: present
+
+  - name: Configuring the configuration file of neutron.conf (oslo_concurrency)
+    tags: neutron, ubuntu, edit
+    lineinfile:
+      path: /etc/neutron/neutron.conf
+      regexp: "lock_path = <None>"
+      line: "lock_path = /var/lib/neutron/tmp"
+      state: present
+
+  - name: Restarting the Nova service
+    service:
+      name: nova-compute
+      state: restarted
+
+  - name: Restarting Linux Bridge Agent
+    service:
+      name: neutron-linuxbridge-agent
+      state: restarted
